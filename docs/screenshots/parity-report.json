@@ -1,0 +1,65 @@
+[
+  {
+    "name": "01-day-all-floors.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0142,
+    "pctPixelsWithinThreshold": 99.94
+  },
+  {
+    "name": "02-night-all-floors.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0219,
+    "pctPixelsWithinThreshold": 99.45
+  },
+  {
+    "name": "03-day-1f-sliced.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0243,
+    "pctPixelsWithinThreshold": 99.55
+  },
+  {
+    "name": "04-day-2f-sliced.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0231,
+    "pctPixelsWithinThreshold": 99.58
+  },
+  {
+    "name": "05-pixel-scale-1px.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0154,
+    "pctPixelsWithinThreshold": 99.79
+  },
+  {
+    "name": "06-pixel-scale-2px.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.01,
+    "pctPixelsWithinThreshold": 99.85
+  },
+  {
+    "name": "07-pixel-scale-3px.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0025,
+    "pctPixelsWithinThreshold": 99.97
+  },
+  {
+    "name": "08-resident-working-1f.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0089,
+    "pctPixelsWithinThreshold": 99.93
+  },
+  {
+    "name": "09-resident-resting-2f.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0265,
+    "pctPixelsWithinThreshold": 99.88
+  }
+]

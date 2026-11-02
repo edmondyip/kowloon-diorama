@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>KOWLOON DIORAMA // PROTO 01</title>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Floating Resident Status Indicator -->
+<div id="resident-bubble">
+  <span class="bubble-icon" id="bubble-icon">⚙</span>
+  <span id="bubble-text">WANDER</span>
+</div>
+
+<!-- Hover Floor Tooltip -->
+<div id="floor-tooltip">CLICK TO SLICE 1F</div>
+
+<!-- Editorial Top HUD -->
+<header class="hud-top">
+  <div class="brand-card">
+    <div class="title-row">
+      <span class="status-dot"></span>
+      <h1 class="hud-title">KOWLOON DIORAMA // PROTO 01</h1>
+    </div>
+    <div class="hud-subtitle">LOT 44-B · WALLED ENCLAVE SHACK · BAYER 4×4 RADIAL DITHER</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span>RESIDENT #01 // AH-ming</span>
+      <span id="slice-readout">VIEW: ALL FLOORS</span>
+    </div>
+    <div class="agent-state-row">
+      <span class="agent-state-badge" id="state-code">WANDER_OUTSIDE</span>
+      <span class="agent-desc" id="state-desc">Strolling courtyard tiles</span>
+    </div>
+    <div class="agent-progress-track">
+      <div class="agent-progress-bar" id="state-progress"></div>
+    </div>
+  </div>
+</header>
+
+<!-- Bottom Editorial Control Bar -->
+<footer class="hud-bottom">
+  <div class="hint-pill">
+    <span>DRAG: ORBIT 360° · SCROLL: ZOOM · CLICK SHACK: FLOOR SLICE · CLICK GROUND: RESET</span>
+    <span class="hover-readout" id="hover-status"></span>
+  </div>
+
+  <div class="controls-bar">
+    <div class="control-group" role="group" aria-label="Floor Slice">
+      <span class="group-label">Slice</span>
+      <button class="hud-btn active" data-slice="all">All Floors</button>
+      <button class="hud-btn" data-slice="2">2F</button>
+      <button class="hud-btn" data-slice="1">1F</button>
+    </div>
+
+    <div class="control-group" role="group" aria-label="Pixel Scale">
+      <span class="group-label">Pixel</span>
+      <button class="hud-btn" data-pixel="1">1px</button>
+      <button class="hud-btn active" data-pixel="2">2px</button>
+      <button class="hud-btn" data-pixel="3">3px</button>
+    </div>
+
+    <div class="control-group" role="group" aria-label="Theme">
+      <span class="group-label">Theme</span>
+      <button class="hud-btn active" data-theme="day">Day Paper</button>
+      <button class="hud-btn" data-theme="night">Night Neon</button>
+    </div>
+
+    <div class="control-group" role="group" aria-label="Simulation Speed">
+      <span class="group-label">Speed</span>
+      <button class="hud-btn active" data-speed="1">1x</button>
+      <button class="hud-btn" data-speed="2">2x</button>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

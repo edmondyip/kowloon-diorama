@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>KOWLOON DIORAMA // PROTO 01</title>
+<style>
+  :root {
+    --bg-color: #f4f3ef;
+    --hud-bg: rgba(244, 243, 239, 0.86);
+    --hud-border: rgba(28, 27, 24, 0.16);
+    --text-main: #1c1b18;
+    --text-muted: #6e6a61;
+    --accent: #c84b31;
+    --accent-bg: rgba(200, 75, 49, 0.12);
+    --btn-bg: rgba(28, 27, 24, 0.05);
+    --btn-hover: rgba(28, 27, 24, 0.11);
+    --btn-active-bg: #1c1b18;
+    --btn-active-text: #f4f3ef;
+    --badge-bg: rgba(28, 27, 24, 0.08);
+  }
+
+  body.night-mode {
+    --bg-color: #0f1216;
+    --hud-bg: rgba(15, 18, 22, 0.84);
+    --hud-border: rgba(226, 232, 240, 0.15);
+    --text-main: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #ff7b54;
+    --accent-bg: rgba(255, 123, 84, 0.16);
+    --btn-bg: rgba(230, 237, 243, 0.06);
+    --btn-hover: rgba(230, 237, 243, 0.14);
+    --btn-active-bg: #ff7b54;
+    --btn-active-text: #0f1216;
+    --badge-bg: rgba(230, 237, 243, 0.09);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace;
+    color: var(--text-main);
+    transition: background-color 0.35s ease, color 0.35s ease;
+  }
+
+  #canvas-container {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+
+  #canvas-container:active {
+    cursor: grabbing;
+  }
+
+  #canvas-container.hovering-floor {
+    cursor: pointer;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  /* Editorial Top Bar */
+  .hud-top {
+    position: fixed;
+    top: 20px;
+    left: 24px;
+    right: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 20;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .brand-card {
+    background: var(--hud-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--hud-border);
+    padding: 12px 16px;
+    border-radius: 4px;
+    pointer-events: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+    border-radius: 1px;
+    display: inline-block;
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulseDot 2s infinite ease-in-out;
+  }
+
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.88); }
+  }
+
+  .hud-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .hud-subtitle {
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+
+  .agent-card {
+    background: var(--hud-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--hud-border);
+    padding: 10px 14px;
+    border-radius: 4px;
+    pointer-events: auto;
+    min-width: 250px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .agent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .agent-state-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .agent-state-badge {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    background: var(--accent-bg);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+
+  .agent-desc {
+    font-size: 11px;
+    color: var(--text-main);
+    white-space: nowrap;
+  }
+
+  .agent-progress-track {
+    margin-top: 7px;
+    width: 100%;
+    height: 3px;
+    background: var(--badge-bg);
+    overflow: hidden;
+    border-radius: 1px;
+  }
+
+  .agent-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width 0.1s linear;
+  }
+
+  /* Bottom / Right Control Bar */
+  .hud-bottom {
+    position: fixed;
+    bottom: 20px;
+    left: 24px;
+    right: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    z-index: 20;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .hint-pill {
+    background: var(--hud-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--hud-border);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .hover-readout {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .controls-bar {
+    background: var(--hud-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--hud-border);
+    padding: 8px 10px;
+    border-radius: 4px;
+    pointer-events: auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .control-group + .control-group {
+    padding-left: 12px;
+    border-left: 1px solid var(--hud-border);
+  }
+
+  .group-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 4px;
+  }
+
+  .hud-btn {
+    appearance: none;
+    border: 1px solid var(--hud-border);
+    background: var(--btn-bg);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 5px 9px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .hud-btn:hover {
+    background: var(--btn-hover);
+  }
+
+  .hud-btn.active {
+    background: var(--btn-active-bg);
+    color: var(--btn-active-text);
+    border-color: var(--btn-active-bg);
+  }
+
+  /* Floating 3D-tracked pixel speech/status bubble */
+  #resident-bubble {
+    position: fixed;
+    pointer-events: none;
+    z-index: 15;
+    transform: translate(-50%, -100%);
+    background: var(--hud-bg);
+    border: 1px solid var(--hud-border);
+    padding: 3px 7px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+  }
+
+  #resident-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px 4px 0;
+    border-style: solid;
+    border-color: var(--hud-border) transparent transparent;
+  }
+
+  .bubble-icon {
+    color: var(--accent);
+  }
+
+  /* Floating floor tag when hovering 1F/2F */
+  #floor-tooltip {
+    position: fixed;
+    pointer-events: none;
+    z-index: 16;
+    transform: translate(14px, -50%);
+    background: var(--btn-active-bg);
+    color: var(--btn-active-text);
+    padding: 4px 8px;
+    border-radius: 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 760px) {
+    .hud-top, .hud-bottom {
+      left: 12px;
+      right: 12px;
+    }
+    .hint-pill {
+      display: none;
+    }
+    .control-group + .control-group {
+      padding-left: 6px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<!-- Floating Resident Status Indicator -->
+<div id="resident-bubble">
+  <span class="bubble-icon" id="bubble-icon">⚙</span>
+  <span id="bubble-text">WANDER</span>
+</div>
+
+<!-- Hover Floor Tooltip -->
+<div id="floor-tooltip">CLICK TO SLICE 1F</div>
+
+<!-- Editorial Top HUD -->
+<header class="hud-top">
+  <div class="brand-card">
+    <div class="title-row">
+      <span class="status-dot"></span>
+      <h1 class="hud-title">KOWLOON DIORAMA // PROTO 01</h1>
+    </div>
+    <div class="hud-subtitle">LOT 44-B · WALLED ENCLAVE SHACK · BAYER 4×4 RADIAL DITHER</div>
+  </div>
+
+  <div class="agent-card">
+    <div class="agent-header">
+      <span>RESIDENT #01 // AH-ming</span>
+      <span id="slice-readout">VIEW: ALL FLOORS</span>
+    </div>
+    <div class="agent-state-row">
+      <span class="agent-state-badge" id="state-code">WANDER_OUTSIDE</span>
+      <span class="agent-desc" id="state-desc">Strolling courtyard tiles</span>
+    </div>
+    <div class="agent-progress-track">
+      <div class="agent-progress-bar" id="state-progress"></div>
+    </div>
+  </div>
+</header>
+
+<!-- Bottom Editorial Control Bar -->
+<footer class="hud-bottom">
+  <div class="hint-pill">
+    <span>DRAG: ORBIT 360° · SCROLL: ZOOM · CLICK SHACK: FLOOR SLICE · CLICK GROUND: RESET</span>
+    <span class="hover-readout" id="hover-status"></span>
+  </div>
+
+  <div class="controls-bar">
+    <div class="control-group" role="group" aria-label="Floor Slice">
+      <span class="group-label">Slice</span>
+      <button class="hud-btn active" data-slice="all">All Floors</button>
+      <button class="hud-btn" data-slice="2">2F</button>
+      <button class="hud-btn" data-slice="1">1F</button>
+    </div>
+
+    <div class="control-group" role="group" aria-label="Pixel Scale">
+      <span class="group-label">Pixel</span>
+      <button class="hud-btn" data-pixel="1">1px</button>
+      <button class="hud-btn active" data-pixel="2">2px</button>
+      <button class="hud-btn" data-pixel="3">3px</button>
+    </div>
+
+    <div class="control-group" role="group" aria-label="Theme">
+      <span class="group-label">Theme</span>
+      <button class="hud-btn active" data-theme="day">Day Paper</button>
+      <button class="hud-btn" data-theme="night">Night Neon</button>
+    </div>
+
+    <div class="control-group" role="group" aria-label="Simulation Speed">
+      <span class="group-label">Speed</span>
+      <button class="hud-btn active" data-speed="1">1x</button>
+      <button class="hud-btn" data-speed="2">2x</button>
+    </div>
+  </div>
+</footer>
+
+<!-- Three.js r128 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+(() => {
+  'use strict';
+
+  // ============================================================================
+  // 1. CONFIGURATION & GLOBAL STATE
+  // ============================================================================
+  const CONFIG = {
+    pixelScale: 2,           // 1, 2, or 3 screen pixels per render-target pixel
+    theme: 'day',            // 'day' (#f4f3ef) | 'night' (#0f1216)
+    sliceMode: 'all',        // 'all' | '1' | '2'
+    simSpeed: 1,             // 1 or 2
+    dayBg: new THREE.Color(0xf4f3ef),
+    nightBg: new THREE.Color(0x0f1216),
+    islandInnerRadius: 5.0,  // Full opacity inside this radius
+    islandOuterRadius: 8.3,  // Fully dissolved outside this radius
+    baseFrustum: 13.5
+  };
+
+  // ============================================================================
+  // 2. PROCEDURAL PIXEL-ART CANVAS TEXTURE GENERATOR (ZERO EXTERNAL ASSETS)
+  // ============================================================================
+  function createSeededRandom(seed) {
+    let s = seed >>> 0;
+    return function() {
+      s = (s * 1664525 + 1013904223) >>> 0;
+      return s / 4294967296;
+    };
+  }
+
+  function makePixelCanvasTexture(width, height, drawFn, repeatX = 1, repeatY = 1) {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    drawFn(ctx, width, height);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(repeatX, repeatY);
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  const TEXTURES = {
+    // Ground cobblestone / mossy dirt tile (16x16 per tile)
+    groundTile: makePixelCanvasTexture(64, 64, (ctx, w, h) => {
+      const rng = createSeededRandom(101);
+      ctx.fillStyle = '#8b8374';
+      ctx.fillRect(0, 0, w, h);
+
+      // Draw 4x4 grid of 16x16 tiles with varied stone & moss tones
+      const stonePalettes = ['#958d7e', '#888071', '#7d7567', '#9c9383', '#737a62'];
+      for (let ty = 0; ty < 4; ty++) {
+        for (let tx = 0; tx < 4; tx++) {
+          const ox = tx * 16;
+          const oy = ty * 16;
+          ctx.fillStyle = stonePalettes[Math.floor(rng() * stonePalettes.length)];
+          ctx.fillRect(ox + 1, oy + 1, 14, 14);
+
+          // Mortar border
+          ctx.fillStyle = '#625c50';
+          ctx.fillRect(ox, oy, 16, 1);
+          ctx.fillRect(ox, oy, 1, 16);
+
+          // Top-left bevel highlight
+          ctx.fillStyle = '#aba393';
+          ctx.fillRect(ox + 1, oy + 1, 13, 1);
+          ctx.fillRect(ox + 1, oy + 1, 1, 13);
+
+          // Pixel speckles & moss patches
+          for (let i = 0; i < 16; i++) {
+            const px = ox + 2 + Math.floor(rng() * 12);
+            const py = oy + 2 + Math.floor(rng() * 12);
+            const r = rng();
+            if (r < 0.22) ctx.fillStyle = '#5e6e47'; // moss pixel
+            else if (r < 0.55) ctx.fillStyle = '#6f685c';
+            else ctx.fillStyle = '#a49c8c';
+            ctx.fillRect(px, py, 1, 1);
+          }
+        }
+      }
+    }, 4, 4),
+
+    // Weathered Kowloon wood planks
+    woodPlanks: makePixelCanvasTexture(32, 32, (ctx, w, h) => {
+      const rng = createSeededRandom(202);
+      const plankColors = ['#7c583c', '#6e4d33', '#876243', '#64452d'];
+      for (let row = 0; row < 4; row++) {
+        const y = row * 8;
+        ctx.fillStyle = plankColors[row % plankColors.length];
+        ctx.fillRect(0, y, w, 7);
+        // Dark seam
+        ctx.fillStyle = '#3f2a1b';
+        ctx.fillRect(0, y + 7, w, 1);
+        // Highlight edge
+        ctx.fillStyle = '#946e4e';
+        ctx.fillRect(0, y, w, 1);
+        // Wood grain & nail pixels
+        const jointX = (row * 11 + 7) % 28 + 2;
+        ctx.fillStyle = '#3f2a1b';
+        ctx.fillRect(jointX, y, 1, 7);
+        ctx.fillRect((jointX + 2) % w, y + 2, 1, 1);
+        ctx.fillRect((jointX + 2) % w, y + 5, 1, 1);
+        for (let i = 0; i < 12; i++) {
+          ctx.fillStyle = rng() > 0.5 ? '#5b3d28' : '#8d6849';
+          ctx.fillRect(Math.floor(rng() * w), y + 1 + Math.floor(rng() * 5), 2, 1);
+        }
+      }
+    }, 2, 2),
+
+    // Interior warm floorboards
+    interiorFloor: makePixelCanvasTexture(32, 32, (ctx, w, h) => {
+      const rng = createSeededRandom(303);
+      for (let row = 0; row < 8; row++) {
+        const y = row * 4;
+        ctx.fillStyle = row % 2 === 0 ? '#a87c51' : '#9b7047';
+        ctx.fillRect(0, y, w, 3);
+        ctx.fillStyle = '#6c4b2d';
+        ctx.fillRect(0, y + 3, w, 1);
+        for (let i = 0; i < 5; i++) {
+          ctx.fillStyle = rng() > 0.5 ? '#b98d62' : '#855d38';
+          ctx.fillRect(Math.floor(rng() * w), y + 1, 2, 1);
+        }
+      }
+    }, 3, 3),
+
+    // Corrugated rusty tin sheet
+    corrugatedTin: makePixelCanvasTexture(32, 32, (ctx, w, h) => {
+      const rng = createSeededRandom(404);
+      for (let x = 0; x < w; x += 4) {
+        ctx.fillStyle = '#738287';
+        ctx.fillRect(x, 0, 1, h);
+        ctx.fillStyle = '#8fa0a6';
+        ctx.fillRect(x + 1, 0, 1, h);
+        ctx.fillStyle = '#5c696e';
+        ctx.fillRect(x + 2, 0, 1, h);
+        ctx.fillStyle = '#475257';
+        ctx.fillRect(x + 3, 0, 1, h);
+      }
+      // Rust patches
+      for (let i = 0; i < 45; i++) {
+        const rx = Math.floor(rng() * w);
+        const ry = Math.floor(rng() * h);
+        ctx.fillStyle = rng() > 0.4 ? '#8f4b32' : '#a85d3e';
+        ctx.fillRect(rx, ry, 1 + Math.floor(rng() * 2), 1 + Math.floor(rng() * 3));
+      }
+    }, 2, 2),
+
+    // Patched green/blue oxidized tin for 2F illegal extension walls
+    patchedWallTin: makePixelCanvasTexture(32, 32, (ctx, w, h) => {
+      const rng = createSeededRandom(505);
+      for (let x = 0; x < w; x += 4) {
+        ctx.fillStyle = '#4e6e68';
+        ctx.fillRect(x, 0, 2, h);
+        ctx.fillStyle = '#3b5450';
+        ctx.fillRect(x + 2, 0, 2, h);
+      }
+      // Horizontal seam
+      ctx.fillStyle = '#293b38';
+      ctx.fillRect(0, 15, w, 1);
+      // Rust & wear
+      for (let i = 0; i < 30; i++) {
+        ctx.fillStyle = rng() > 0.5 ? '#7c4734' : '#63857e';
+        ctx.fillRect(Math.floor(rng() * w), Math.floor(rng() * h), 2, 1);
+      }
+    }, 2, 1),
+
+    // Concrete / brick base
+    concreteWall: makePixelCanvasTexture(32, 32, (ctx, w, h) => {
+      const rng = createSeededRandom(606);
+      ctx.fillStyle = '#9c968b';
+      ctx.fillRect(0, 0, w, h);
+      for (let i = 0; i < 90; i++) {
+        ctx.fillStyle = rng() > 0.5 ? '#878176' : '#aba59a';
+        ctx.fillRect(Math.floor(rng() * w), Math.floor(rng() * h), 1 + Math.floor(rng() * 2), 1);
+      }
+      // Exposed brick patch
+      const bx = 6, by = 10;
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          ctx.fillStyle = (r + c) % 2 === 0 ? '#9e4f3b' : '#874130';
+          ctx.fillRect(bx + c * 5 + (r % 2) * 2, by + r * 3, 4, 2);
+        }
+      }
+    }, 2, 1),
+
+    // Window pane texture (day/night emissive friendly)
+    windowPane: makePixelCanvasTexture(16, 16, (ctx, w, h) => {
+      ctx.fillStyle = '#3a2b22';
+      ctx.fillRect(0, 0, w, h);
+      // 4 panes
+      ctx.fillStyle = '#ffd584';
+      ctx.fillRect(2, 2, 5, 5);
+      ctx.fillRect(9, 2, 5, 5);
+      ctx.fillRect(2, 9, 5, 5);
+      ctx.fillRect(9, 9, 5, 5);
+      // Highlights
+      ctx.fillStyle = '#fff1cc';
+      ctx.fillRect(3, 3, 2, 2);
+      ctx.fillRect(10, 3, 2, 2);
+    }, 1, 1),
+
+    // Neon Sign texture ("九龍" pixel glyph look)
+    neonSign: makePixelCanvasTexture(32, 64, (ctx, w, h) => {
+      ctx.fillStyle = '#18141c';
+      ctx.fillRect(0, 0, w, h);
+      // Outer neon border
+      ctx.fillStyle = '#ff3e6c';
+      ctx.fillRect(2, 2, w - 4, 2);
+      ctx.fillRect(2, h - 4, w - 4, 2);
+      ctx.fillRect(2, 2, 2, h - 4);
+      ctx.fillRect(w - 4, 2, 2, h - 4);
+
+      // Stylized pixel kanji / characters in warm gold & cyan
+      ctx.fillStyle = '#ffe066';
+      // Top glyph ("九")
+      ctx.fillRect(14, 9, 3, 18);
+      ctx.fillRect(8, 14, 15, 3);
+      ctx.fillRect(20, 14, 3, 12);
+      ctx.fillRect(20, 24, 6, 3);
+      ctx.fillRect(9, 17, 3, 9);
+
+      // Divider bar
+      ctx.fillStyle = '#38f9d7';
+      ctx.fillRect(7, 31, 18, 2);
+
+      // Bottom glyph ("記")
+      ctx.fillStyle = '#ff9f43';
+      ctx.fillRect(8, 37, 7, 2);
+      ctx.fillRect(8, 42, 7, 2);
+      ctx.fillRect(8, 47, 7, 7);
+      ctx.fillRect(17, 37, 8, 3);
+      ctx.fillRect(22, 37, 3, 10);
+      ctx.fillRect(17, 45, 8, 2);
+      ctx.fillRect(17, 45, 2, 9);
+      ctx.fillRect(17, 52, 9, 2);
+    }, 1, 1),
+
+    // AC Unit Front Grille
+    acUnit: makePixelCanvasTexture(16, 16, (ctx, w, h) => {
+      ctx.fillStyle = '#c5c1b4';
+      ctx.fillRect(0, 0, w, h);
+      // Dark fan circle on left
+      ctx.fillStyle = '#2d3134';
+      ctx.fillRect(2, 3, 9, 10);
+      ctx.fillStyle = '#4c5256';
+      ctx.fillRect(5, 6, 3, 4);
+      // Vents on right
+      ctx.fillStyle = '#6c685e';
+      for (let y = 3; y <= 12; y += 2) {
+        ctx.fillRect(12, y, 3, 1);
+      }
+    }, 1, 1),
+
+    // Bed Quilt Texture
+    quilt: makePixelCanvasTexture(16, 16, (ctx, w, h) => {
+      ctx.fillStyle = '#b34438';
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = '#d96b52';
+      for (let y = 2; y < h; y += 4) {
+        for (let x = 2; x < w; x += 4) {
+          ctx.fillRect(x, y, 2, 2);
+        }
+      }
+      // White sheet fold at top
+      ctx.fillStyle = '#e8e4d9';
+      ctx.fillRect(0, 0, w, 4);
+    }, 1, 1),
+
+    // Resident Head Face Texture
+    residentHead: makePixelCanvasTexture(16, 16, (ctx, w, h) => {
+      // Skin base
+      ctx.fillStyle = '#f1c29b';
+      ctx.fillRect(0, 0, w, h);
+      // Dark hair cap & sideburns
+      ctx.fillStyle = '#231f20';
+      ctx.fillRect(0, 0, w, 5);
+      ctx.fillRect(0, 5, 2, 4);
+      ctx.fillRect(w - 2, 5, 2, 4);
+      // Red/white headband
+      ctx.fillStyle = '#d14334';
+      ctx.fillRect(0, 4, w, 2);
+      // Eyes
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(4, 8, 2, 3);
+      ctx.fillRect(10, 8, 2, 3);
+      // Eye shine
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(4, 8, 1, 1);
+      ctx.fillRect(10, 8, 1, 1);
+      // Warm blush / mouth
+      ctx.fillStyle = '#d48c6f';
+      ctx.fillRect(6, 12, 4, 1);
+    }, 1, 1),
+
+    // Resident Torso Shirt + Apron
+    residentTorso: makePixelCanvasTexture(16, 16, (ctx, w, h) => {
+      // Teal/blue work jacket
+      ctx.fillStyle = '#2d6a7e';
+      ctx.fillRect(0, 0, w, h);
+      // Cream undershirt collar
+      ctx.fillStyle = '#f2eadc';
+      ctx.fillRect(5, 0, 6, 3);
+      // Work apron / pocket
+      ctx.fillStyle = '#c88a4b';
+      ctx.fillRect(3, 6, 10, 10);
+      ctx.fillStyle = '#9e6832';
+      ctx.fillRect(5, 9, 6, 4);
+    }, 1, 1)
+  };
+
+  // ============================================================================
+  // 3. SCENE, CAMERA & LOW-RES PIXEL ART PIPELINE SETUP
+  // ============================================================================
+  const container = document.getElementById('canvas-container');
+  const renderer = new THREE.WebGLRenderer({
+    antialias: false,
+    powerPreference: 'high-performance'
+  });
+  renderer.setPixelRatio(1); // Crucial: 1:1 CSS pixel buffer so low-res upscale stays razor sharp
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.BasicShadowMap; // Crisp pixel shadows!
+  container.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = CONFIG.dayBg.clone();
+
+  // Isometric Orthographic Camera
+  const aspect = window.innerWidth / window.innerHeight;
+  const camera = new THREE.OrthographicCamera(
+    -CONFIG.baseFrustum * aspect,
+    CONFIG.baseFrustum * aspect,
+    CONFIG.baseFrustum,
+    -CONFIG.baseFrustum,
+    0.1,
+    120
+  );
+
+  // Camera Orbit / Zoom / Target State
+  const camState = {
+    yaw: Math.PI * 0.25,          // Classic 45° isometric yaw
+    pitch: Math.atan(1 / Math.sqrt(2)), // True isometric ~35.264° pitch
+    distance: 36,
+    zoom: 1.22,
+    targetZoom: 1.22,
+    target: new THREE.Vector3(0, 1.8, 0),
+    desiredTarget: new THREE.Vector3(0, 1.8, 0),
+    isDragging: false,
+    dragStart: new THREE.Vector2(),
+    pointerDownPos: new THREE.Vector2(),
+    dragMoved: false
+  };
+
+  function updateCameraTransform() {
+    const cosPitch = Math.cos(camState.pitch);
+    const sinPitch = Math.sin(camState.pitch);
+    const cosYaw = Math.cos(camState.yaw);
+    const sinYaw = Math.sin(camState.yaw);
+
+    camera.position.set(
+      camState.target.x + camState.distance * cosPitch * sinYaw,
+      camState.target.y + camState.distance * sinPitch,
+      camState.target.z + camState.distance * cosPitch * cosYaw
+    );
+    camera.lookAt(camState.target);
+    camera.zoom = camState.zoom;
+    camera.updateProjectionMatrix();
+  }
+  updateCameraTransform();
+
+  // Low-Res Render Targets (Color + Depth, plus Normal pass for 1px normal/depth outlines)
+  let colorTarget = null;
+  let normalTarget = null;
+  const normalOverrideMaterial = new THREE.MeshNormalMaterial();
+
+  function getRenderTargetDimensions() {
+    const w = Math.max(64, Math.floor(window.innerWidth / CONFIG.pixelScale));
+    const h = Math.max(64, Math.floor(window.innerHeight / CONFIG.pixelScale));
+    return { w, h };
+  }
+
+  function initRenderTargets() {
+    const { w, h } = getRenderTargetDimensions();
+    if (colorTarget) colorTarget.dispose();
+    if (normalTarget) normalTarget.dispose();
+
+    const depthTexture = new THREE.DepthTexture(w, h);
+    depthTexture.type = THREE.UnsignedShortType;
+    depthTexture.minFilter = THREE.NearestFilter;
+    depthTexture.magFilter = THREE.NearestFilter;
+
+    colorTarget = new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat,
+      depthTexture: depthTexture,
+      depthBuffer: true,
+      stencilBuffer: false
+    });
+
+    normalTarget = new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.NearestFilter,
+      magFilter: THREE.NearestFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: true,
+      stencilBuffer: false
+    });
+
+    if (postQuadMaterial) {
+      postQuadMaterial.uniforms.tColor.value = colorTarget.texture;
+      postQuadMaterial.uniforms.tDepth.value = colorTarget.depthTexture;
+      postQuadMaterial.uniforms.tNormal.value = normalTarget.texture;
+      postQuadMaterial.uniforms.uResolution.value.set(w, h);
+    }
+  }
+
+  // Fullscreen Post-Processing Shader:
+  // - Nearest-neighbor low-res pixel composite
+  // - Depth & Normal discontinuity 1px dark pixel-art outlines
+  // - Subtle palette quantization / cel-stepped contrast
+  const postScene = new THREE.Scene();
+  const postCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+  const postQuadMaterial = new THREE.ShaderMaterial({
+    uniforms: {
+      tColor: { value: null },
+      tDepth: { value: null },
+      tNormal: { value: null },
+      uResolution: { value: new THREE.Vector2(320, 240) },
+      uNear: { value: camera.near },
+      uFar: { value: camera.far },
+      uNightMode: { value: 0.0 }
+    },
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = vec4(position.xy, 0.0, 1.0);
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+      uniform sampler2D tColor;
+      uniform sampler2D tDepth;
+      uniform sampler2D tNormal;
+      uniform vec2 uResolution;
+      uniform float uNear;
+      uniform float uFar;
+      uniform float uNightMode;
+      varying vec2 vUv;
+
+      float getLinearDepth(vec2 coord) {
+        float z = texture2D(tDepth, coord).x;
+        // Ortho camera depth is already linear in [0, 1]
+        return mix(uNear, uFar, z);
+      }
+
+      void main() {
+        vec2 texel = 1.0 / uResolution;
+        vec4 baseCol = texture2D(tColor, vUv);
+
+        float dCenter = getLinearDepth(vUv);
+        float dLeft   = getLinearDepth(vUv + vec2(-texel.x, 0.0));
+        float dRight  = getLinearDepth(vUv + vec2( texel.x, 0.0));
+        float dUp     = getLinearDepth(vUv + vec2(0.0,  texel.y));
+        float dDown   = getLinearDepth(vUv + vec2(0.0, -texel.y));
+
+        // Only draw depth outline if current pixel is closer than neighbor (external silhouette crispness)
+        float depthDiff = 0.0;
+        depthDiff = max(depthDiff, dLeft  - dCenter);
+        depthDiff = max(depthDiff, dRight - dCenter);
+        depthDiff = max(depthDiff, dUp    - dCenter);
+        depthDiff = max(depthDiff, dDown  - dCenter);
+
+        vec3 nCenter = texture2D(tNormal, vUv).xyz * 2.0 - 1.0;
+        vec3 nRight  = texture2D(tNormal, vUv + vec2(texel.x, 0.0)).xyz * 2.0 - 1.0;
+        vec3 nUp     = texture2D(tNormal, vUv + vec2(0.0, texel.y)).xyz * 2.0 - 1.0;
+
+        float normDiff = max(distance(nCenter, nRight), distance(nCenter, nUp));
+
+        // Ignore background sky pixels
+        bool isBackground = (texture2D(tDepth, vUv).x > 0.999);
+        // Only apply dark 1px silhouette/crease outlines to 3D structures & resident (alpha > 0.5 in normalTarget),
+        // keeping the Stari Most radial Bayer 4x4 ground dither completely clean as it dissolves into the paper background!
+        bool isStructureOrAgent = (texture2D(tNormal, vUv).a > 0.5);
+
+        float depthEdge = step(0.55, depthDiff);
+        float normalEdge = step(0.42, normDiff) * (1.0 - step(0.25, abs(dRight - dCenter) + abs(dUp - dCenter)));
+
+        vec3 col = baseCol.rgb;
+
+        if (!isBackground) {
+          // Subtle 16-bit palette quantization
+          col = floor(col * 28.0 + 0.5) / 28.0;
+
+          // Apply 1px dark outline on depth silhouettes and crease edges of structures & resident
+          if (isStructureOrAgent) {
+            if (depthEdge > 0.5) {
+              vec3 outlineCol = mix(vec3(0.14, 0.12, 0.10), vec3(0.03, 0.04, 0.06), uNightMode);
+              col = mix(col, outlineCol, 0.82);
+            } else if (normalEdge > 0.5) {
+              col *= 0.78;
+            }
+          }
+        }
+
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `,
+    depthWrite: false,
+    depthTest: false
+  });
+
+  const postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postQuadMaterial);
+  postScene.add(postQuad);
+
+  initRenderTargets();
+
+  // ============================================================================
+  // 4. LIGHTING & CEL-STEPPED PIXEL MATERIAL FACTORY
+  // ============================================================================
+  const ambientLight = new THREE.AmbientLight(0xfff4e0, 0.72);
+  scene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xfff2d6, 0.92);
+  dirLight.position.set(14, 24, 16);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 512;
+  dirLight.shadow.mapSize.height = 512;
+  dirLight.shadow.camera.near = 1;
+  dirLight.shadow.camera.far = 60;
+  const shadowCamSize = 11;
+  dirLight.shadow.camera.left = -shadowCamSize;
+  dirLight.shadow.camera.right = shadowCamSize;
+  dirLight.shadow.camera.top = shadowCamSize;
+  dirLight.shadow.camera.bottom = -shadowCamSize;
+  dirLight.shadow.bias = -0.0015;
+  scene.add(dirLight);
+
+  // Subtle fill light from opposite angle
+  const fillLight = new THREE.DirectionalLight(0x9cb8d9, 0.28);
+  fillLight.position.set(-14, 10, -12);
+  scene.add(fillLight);
+
+  // Warm interior point lights (for 1F stove/workbench & 2F room glow)
+  const stoveLight1F = new THREE.PointLight(0xff9240, 0.8, 6.5);
+  stoveLight1F.position.set(-0.9, 1.3, -0.6);
+  scene.add(stoveLight1F);
+
+  const lanternLight2F = new THREE.PointLight(0xffb85c, 0.6, 6.5);
+  lanternLight2F.position.set(0.2, 3.8, 0.0);
+  scene.add(lanternLight2F);
+
+  const neonGlowLight = new THREE.PointLight(0xff477e, 0.0, 5.5);
+  neonGlowLight.position.set(2.5, 3.6, 1.4);
+  scene.add(neonGlowLight);
+
+  // Helper to create 4-step Toon gradient map so all materials have crisp cel-shaded lighting bands
+  const toonGradientTex = makePixelCanvasTexture(4, 1, (ctx) => {
+    ctx.fillStyle = '#555555'; ctx.fillRect(0, 0, 1, 1);
+    ctx.fillStyle = '#888888'; ctx.fillRect(1, 0, 1, 1);
+    ctx.fillStyle = '#c4c4c4'; ctx.fillRect(2, 0, 1, 1);
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(3, 0, 1, 1);
+  });
+
+  function makeCelMaterial(options = {}) {
+    const mat = new THREE.MeshToonMaterial({
+      color: options.color !== undefined ? options.color : 0xffffff,
+      map: options.map || null,
+      gradientMap: toonGradientTex,
+      emissive: options.emissive !== undefined ? new THREE.Color(options.emissive) : new THREE.Color(0x000000),
+      emissiveMap: options.emissiveMap || null,
+      emissiveIntensity: options.emissiveIntensity !== undefined ? options.emissiveIntensity : 0.0
+    });
+    return mat;
+  }
+
+  // ============================================================================
+  // 5. "STARI MOST" GROUND-ONLY RADIAL BAYER 4x4 DITHERED EDGE FADE
+  // ============================================================================
+  // Inject world-space radial 4x4 Bayer dither discard ONLY into ground materials!
+  function applyGroundRadialBayerDither(material) {
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.uInnerRadius = { value: CONFIG.islandInnerRadius };
+      shader.uniforms.uOuterRadius = { value: CONFIG.islandOuterRadius };
+
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        `#include <common>
+         varying vec3 vGroundWorldPos;`
+      );
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <worldpos_vertex>',
+        `#include <worldpos_vertex>
+         vGroundWorldPos = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+      );
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        `#include <common>
+         varying vec3 vGroundWorldPos;
+         uniform float uInnerRadius;
+         uniform float uOuterRadius;
+
+         // Classic 4x4 Bayer threshold matrix in [0, 1)
+         float bayer4x4(vec2 pos) {
+           int x = int(mod(pos.x, 4.0));
+           int y = int(mod(pos.y, 4.0));
+           int index = x + y * 4;
+           if (index == 0)  return  0.0 / 16.0;
+           if (index == 1)  return  8.0 / 16.0;
+           if (index == 2)  return  2.0 / 16.0;
+           if (index == 3)  return 10.0 / 16.0;
+           if (index == 4)  return 12.0 / 16.0;
+           if (index == 5)  return  4.0 / 16.0;
+           if (index == 6)  return 14.0 / 16.0;
+           if (index == 7)  return  6.0 / 16.0;
+           if (index == 8)  return  3.0 / 16.0;
+           if (index == 9)  return 11.0 / 16.0;
+           if (index == 10) return  1.0 / 16.0;
+           if (index == 11) return  9.0 / 16.0;
+           if (index == 12) return 15.0 / 16.0;
+           if (index == 13) return  7.0 / 16.0;
+           if (index == 14) return 13.0 / 16.0;
+           return 5.0 / 16.0;
+         }`
+      );
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        `#include <dithering_fragment>
+         // Quantize world XZ to crisp pixel-grid cells (8 sub-cells per world unit)
+         vec2 gridXZ = floor(vGroundWorldPos.xz * 8.0);
+         float angle = atan(vGroundWorldPos.z, vGroundWorldPos.x);
+         float organicWobble = sin(angle * 5.0) * 0.28 + cos(angle * 3.0) * 0.22;
+         float radialDist = length(vGroundWorldPos.xz) + organicWobble;
+         float fadeFactor = 1.0 - smoothstep(uInnerRadius, uOuterRadius, radialDist);
+
+         // Screen-space & world-grid hybrid Bayer 4x4 stipple discard
+         float threshold = bayer4x4(gl_FragCoord.xy);
+         if (fadeFactor <= threshold + 0.02) {
+           discard;
+         }`
+      );
+    };
+    // Ensure custom depth material for shadows also clips identically
+    const customDepthMat = new THREE.MeshDepthMaterial({
+      depthPacking: THREE.RGBADepthPacking
+    });
+    customDepthMat.onBeforeCompile = material.onBeforeCompile;
+    material.userData.customDepthMaterial = customDepthMat;
+    return material;
+  }
+
+  // Build the 16x16 Ground Island around (0, 0, 0)
+  const groundGroup = new THREE.Group();
+  groundGroup.name = 'GroundIsland';
+  scene.add(groundGroup);
+
+  const groundMainMat = applyGroundRadialBayerDither(makeCelMaterial({
+    map: TEXTURES.groundTile,
+    color: 0xd8d2c5
+  }));
+
+  const groundSubSoilMat = applyGroundRadialBayerDither(makeCelMaterial({
+    color: 0x5c5346
+  }));
+
+  // Top cobblestone slab (16x16 units centered at 0,0,0)
+  const groundSlabGeo = new THREE.BoxGeometry(16, 0.36, 16);
+  const groundSlab = new THREE.Mesh(groundSlabGeo, groundMainMat);
+  groundSlab.position.set(0, -0.18, 0);
+  groundSlab.receiveShadow = true;
+  groundSlab.castShadow = false;
+  groundSlab.customDepthMaterial = groundMainMat.userData.customDepthMaterial;
+  groundGroup.add(groundSlab);
+
+  // Subtle earthen under-layer for edge thickness
+  const subSlabGeo = new THREE.BoxGeometry(15.6, 0.45, 15.6);
+  const subSlab = new THREE.Mesh(subSlabGeo, groundSubSoilMat);
+  subSlab.position.set(0, -0.58, 0);
+  subSlab.receiveShadow = true;
+  subSlab.customDepthMaterial = groundSubSoilMat.userData.customDepthMaterial;
+  groundGroup.add(subSlab);
+
+  // Scattered stray grass tufts, mossy stepping stones & pebbles on the ground (also dithered!)
+  const grassMat = applyGroundRadialBayerDither(makeCelMaterial({ color: 0x5c7a45 }));
+  const mossMat  = applyGroundRadialBayerDither(makeCelMaterial({ color: 0x718c54 }));
+  const pebbleMat = applyGroundRadialBayerDither(makeCelMaterial({ color: 0x757067 }));
+  const flagstoneMat = applyGroundRadialBayerDither(makeCelMaterial({ color: 0x9c9588 }));
+
+  // Path flagstones leading from front door (+Z) out into the courtyard
+  const pathCoords = [
+    [0.0, 2.3, 1.1, 0.8],
+    [0.15, 3.3, 1.0, 0.75],
+    [-0.1, 4.25, 0.95, 0.7],
+    [0.2, 5.15, 0.85, 0.65],
+    [-1.4, 3.6, 0.75, 0.65],
+    [-2.4, 3.1, 0.8, 0.7]
+  ];
+  pathCoords.forEach(([x, z, w, d]) => {
+    const stone = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), flagstoneMat);
+    stone.position.set(x, 0.03, z);
+    stone.receiveShadow = true;
+    groundGroup.add(stone);
+  });
+
+  // Scatter voxel grass blades & pebbles around the island perimeter
+  const scatterRng = createSeededRandom(999);
+  for (let i = 0; i < 85; i++) {
+    const angle = scatterRng() * Math.PI * 2;
+    const radius = 2.6 + scatterRng() * 5.2;
+    const gx = Math.cos(angle) * radius;
+    const gz = Math.sin(angle) * radius;
+    // Don't place inside the shack footprint
+    if (Math.abs(gx) < 2.5 && Math.abs(gz) < 2.2) continue;
+
+    if (scatterRng() > 0.35) {
+      // Voxel grass tuft (2-3 tiny blades)
+      const h = 0.14 + scatterRng() * 0.22;
+      const blade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, h, 0.12),
+        scatterRng() > 0.5 ? grassMat : mossMat
+      );
+      blade.position.set(gx, h * 0.5, gz);
+      blade.castShadow = true;
+      blade.receiveShadow = true;
+      groundGroup.add(blade);
+    } else {
+      // Voxel pebble
+      const s = 0.12 + scatterRng() * 0.14;
+      const pebble = new THREE.Mesh(
+        new THREE.BoxGeometry(s * 1.2, s * 0.6, s),
+        pebbleMat
+      );
+      pebble.position.set(gx, s * 0.3, gz);
+      pebble.receiveShadow = true;
+      groundGroup.add(pebble);
+    }
+  }
+
+  // ============================================================================
+  // 6. THE 2-STORY KOWLOON WOODEN/TIN SHACK & INTERACTIVE FLOOR CUTAWAY
+  // ============================================================================
+  // Shared solid materials (100% solid — NEVER dither-clipped!)
+  const MAT = {
+    woodWall: makeCelMaterial({ map: TEXTURES.woodPlanks, color: 0xd8c6b0 }),
+    woodDark: makeCelMaterial({ color: 0x4f3624 }),
+    woodBeam: makeCelMaterial({ color: 0x61422c }),
+    woodLight: makeCelMaterial({ color: 0xb88b5e }),
+    floor1F: makeCelMaterial({ map: TEXTURES.interiorFloor, color: 0xd4be9e }),
+    floor2F: makeCelMaterial({ map: TEXTURES.interiorFloor, color: 0xc9b08e }),
+    concrete: makeCelMaterial({ map: TEXTURES.concreteWall, color: 0xd2ccc0 }),
+    tinWall: makeCelMaterial({ map: TEXTURES.patchedWallTin, color: 0xd0dedc }),
+    tinRoof: makeCelMaterial({ map: TEXTURES.corrugatedTin, color: 0xc8d2d6 }),
+    rustMetal: makeCelMaterial({ color: 0x7d4430 }),
+    darkMetal: makeCelMaterial({ color: 0x363b3e }),
+    pipeMetal: makeCelMaterial({ color: 0x677278 }),
+    copperPipe: makeCelMaterial({ color: 0xb36a42 }),
+    redCrate: makeCelMaterial({ color: 0xc23b2b }),
+    blueTarp: makeCelMaterial({ color: 0x2f6999 }),
+    bamboo: makeCelMaterial({ color: 0xb89d58 }),
+    quilt: makeCelMaterial({ map: TEXTURES.quilt }),
+    pillow: makeCelMaterial({ color: 0xeee8dc }),
+    stoveFire: new THREE.MeshBasicMaterial({ color: 0xff6b2b }),
+    windowGlass: makeCelMaterial({
+      map: TEXTURES.windowPane,
+      emissive: 0xffaa44,
+      emissiveMap: TEXTURES.windowPane,
+      emissiveIntensity: 0.15
+    }),
+    neonSign: makeCelMaterial({
+      map: TEXTURES.neonSign,
+      emissive: 0xffffff,
+      emissiveMap: TEXTURES.neonSign,
+      emissiveIntensity: 0.35
+    }),
+    lanternBulb: new THREE.MeshBasicMaterial({ color: 0xffd27d }),
+    acUnit: makeCelMaterial({ map: TEXTURES.acUnit }),
+    foliage: makeCelMaterial({ color: 0x4d7c3e }),
+    terracotta: makeCelMaterial({ color: 0xa8553a }),
+    laundryWhite: makeCelMaterial({ color: 0xeae6df }),
+    laundryYellow: makeCelMaterial({ color: 0xe0b956 })
+  };
+
+  // Helper to create a box mesh with shadows and floor raycast tagging
+  const pickableMeshes = [];
+  const cutawayWallMeshes1F = [];
+  const cutawayWallMeshes2F = [];
+
+  function addBox(parent, w, h, d, x, y, z, material, opts = {}) {
+    const geo = new THREE.BoxGeometry(w, h, d);
+    // If this is a cutaway wall, shift geometry origin to bottom so scaling Y scales cleanly from its floor base!
+    if (opts.cutawayFloor) {
+      geo.translate(0, h / 2, 0);
+    }
+    const mesh = new THREE.Mesh(geo, material);
+    if (opts.cutawayFloor) {
+      mesh.position.set(x, y - h / 2, z);
+      mesh.userData.fullScaleY = 1.0;
+      mesh.userData.cutScaleY = opts.cutScaleY !== undefined ? opts.cutScaleY : 0.22;
+      if (opts.cutawayFloor === 1) cutawayWallMeshes1F.push(mesh);
+      if (opts.cutawayFloor === 2) cutawayWallMeshes2F.push(mesh);
+    } else {
+      mesh.position.set(x, y, z);
+    }
+
+    if (opts.rotX) mesh.rotation.x = opts.rotX;
+    if (opts.rotY) mesh.rotation.y = opts.rotY;
+    if (opts.rotZ) mesh.rotation.z = opts.rotZ;
+
+    mesh.castShadow = opts.castShadow !== undefined ? opts.castShadow : true;
+    mesh.receiveShadow = opts.receiveShadow !== undefined ? opts.receiveShadow : true;
+
+    if (opts.floorTag) {
+      mesh.userData.floorTag = opts.floorTag;
+      pickableMeshes.push(mesh);
+    }
+    parent.add(mesh);
+    return mesh;
+  }
+
+  const shackRoot = new THREE.Group();
+  shackRoot.name = 'KowloonShack';
+  scene.add(shackRoot);
+
+  // ----------------------------------------------------------------------------
+  // FLOOR 1 (`FloorGroup_1`): y = 0.0 to 2.4
+  // Footprint: X from -2.0 to +2.0 (width 4.0), Z from -1.7 to +1.7 (depth 3.4)
+  // Doorway on Front Wall (+Z = +1.7), centered around X = 0.0 (width 0.95)
+  // ----------------------------------------------------------------------------
+  const FloorGroup_1 = new THREE.Group();
+  FloorGroup_1.name = 'FloorGroup_1';
+  shackRoot.add(FloorGroup_1);
+
+  // Concrete foundation plinth & interior wooden floor
+  addBox(FloorGroup_1, 4.2, 0.20, 3.6, 0, 0.10, 0, MAT.concrete, { floorTag: 1 });
+  addBox(FloorGroup_1, 3.88, 0.06, 3.28, 0, 0.21, 0, MAT.floor1F, { floorTag: 1 });
+
+  // Front stone step outside the doorway (+Z)
+  addBox(FloorGroup_1, 1.25, 0.12, 0.45, 0.0, 0.06, 1.98, MAT.concrete, { floorTag: 1 });
+
+  // Corner wooden structural posts (1F)
+  const wallH1 = 2.2;
+  const wallCenterY1 = 0.2 + wallH1 / 2; // 1.3
+  addBox(FloorGroup_1, 0.16, wallH1, 0.16, -1.94, wallCenterY1, -1.64, MAT.woodBeam, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.16, wallH1, 0.16,  1.94, wallCenterY1, -1.64, MAT.woodBeam, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.16, wallH1, 0.16, -1.94, wallCenterY1,  1.64, MAT.woodBeam, { floorTag: 1, cutawayFloor: 1, cutScaleY: 0.22 });
+  addBox(FloorGroup_1, 0.16, wallH1, 0.16,  1.94, wallCenterY1,  1.64, MAT.woodBeam, { floorTag: 1, cutawayFloor: 1, cutScaleY: 0.22 });
+
+  // Back Wall (-Z = -1.64) — kept higher so interior has a backdrop, or slightly lowered to 0.55 on slice
+  addBox(FloorGroup_1, 3.88, wallH1, 0.14, 0, wallCenterY1, -1.64, MAT.woodWall, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.42
+  });
+
+  // Left Wall (-X = -1.94) — drops to half/low height in cutaway
+  addBox(FloorGroup_1, 0.14, wallH1, 3.28, -1.94, wallCenterY1, 0, MAT.concrete, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.24
+  });
+
+  // Right Wall (+X = +1.94) — drops to low height in cutaway
+  addBox(FloorGroup_1, 0.14, wallH1, 3.28, 1.94, wallCenterY1, 0, MAT.woodWall, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.24
+  });
+
+  // Front Wall (+Z = +1.64) with open doorway in center (X in [-0.48, +0.48])
+  // Left segment of front wall: X from -1.94 to -0.48 (width 1.46, center -1.21)
+  addBox(FloorGroup_1, 1.46, wallH1, 0.14, -1.21, wallCenterY1, 1.64, MAT.woodWall, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.20
+  });
+  // Right segment of front wall: X from +0.48 to +1.94 (width 1.46, center +1.21)
+  addBox(FloorGroup_1, 1.46, wallH1, 0.14, 1.21, wallCenterY1, 1.64, MAT.woodWall, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.20
+  });
+  // Door lintel above doorway
+  addBox(FloorGroup_1, 1.02, 0.42, 0.16, 0.0, 2.19, 1.64, MAT.woodBeam, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.01
+  });
+  // Open wooden door leaf swung slightly inward
+  addBox(FloorGroup_1, 0.08, 1.72, 0.78, -0.46, 1.08, 1.24, MAT.woodDark, {
+    rotY: 0.35,
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.24
+  });
+
+  // 1F Front Window on right front wall (+X = 1.22, +Z = 1.68)
+  addBox(FloorGroup_1, 0.72, 0.68, 0.18, 1.22, 1.38, 1.65, MAT.windowGlass, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.02
+  });
+  // Tiny corrugated metal rain awning over front door & window
+  addBox(FloorGroup_1, 2.9, 0.08, 0.65, 0.4, 2.18, 1.98, MAT.tinRoof, {
+    rotX: 0.22,
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.01
+  });
+
+  // --- 1F INTERIOR FURNITURE (Workbench/Stove, Bed, Shelves, Staircase) ---
+  // 1) Workbench & Wok Stove on Left-Back corner (around X = -1.1, Z = -0.85)
+  addBox(FloorGroup_1, 1.35, 0.68, 0.68, -1.12, 0.56, -1.12, MAT.woodLight, { floorTag: 1 }); // Bench counter
+  addBox(FloorGroup_1, 1.40, 0.08, 0.72, -1.12, 0.92, -1.12, MAT.woodDark, { floorTag: 1 });  // Bench tabletop
+  // Wok stove burner & iron wok on left side of bench
+  addBox(FloorGroup_1, 0.46, 0.12, 0.46, -1.42, 1.00, -1.12, MAT.darkMetal, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.30, 0.06, 0.30, -1.42, 1.07, -1.12, MAT.stoveFire, { floorTag: 1 });
+  // Tool rack & exhaust hood on back wall behind workbench
+  addBox(FloorGroup_1, 0.65, 0.26, 0.45, -1.42, 1.78, -1.32, MAT.tinWall, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.1
+  });
+  // Small radio / tool box on right side of workbench
+  addBox(FloorGroup_1, 0.34, 0.24, 0.26, -0.74, 1.08, -1.16, MAT.redCrate, { floorTag: 1 });
+  // Wooden stool in front of workbench
+  addBox(FloorGroup_1, 0.34, 0.38, 0.34, -0.95, 0.42, -0.42, MAT.woodDark, { floorTag: 1 });
+
+  // 2) Cozy Cot / Bed on Left-Front corner (X = -1.25, Z = +0.55)
+  addBox(FloorGroup_1, 1.15, 0.28, 1.55, -1.25, 0.36, 0.62, MAT.woodBeam, { floorTag: 1 }); // Bed frame
+  addBox(FloorGroup_1, 1.06, 0.14, 1.46, -1.25, 0.54, 0.62, MAT.quilt, { floorTag: 1 });    // Mattress & quilt
+  addBox(FloorGroup_1, 0.68, 0.12, 0.34, -1.25, 0.64, 1.12, MAT.pillow, { floorTag: 1 });   // Pillow
+
+  // 3) Interior Wooden Staircase on Right side (X = +1.32), climbing from Z = +0.85 (bottom) to Z = -1.05 (top at 2F)
+  const numSteps = 8;
+  for (let s = 0; s < numSteps; s++) {
+    const stepT = s / (numSteps - 1);
+    const stepY = 0.38 + s * 0.27;
+    const stepZ = 0.85 - stepT * 1.85;
+    addBox(FloorGroup_1, 0.76, 0.12, 0.32, 1.36, stepY, stepZ, MAT.woodLight, { floorTag: 1 });
+    // Support stringer post under every other step
+    if (s % 2 === 1) {
+      addBox(FloorGroup_1, 0.10, stepY - 0.22, 0.10, 1.02, 0.22 + (stepY - 0.22) / 2, stepZ, MAT.woodBeam, { floorTag: 1 });
+    }
+  }
+  // Handrail post at bottom of stairs
+  addBox(FloorGroup_1, 0.10, 0.75, 0.10, 1.00, 0.60, 0.95, MAT.woodDark, { floorTag: 1 });
+  // Storage crate tucked under the stairs
+  addBox(FloorGroup_1, 0.52, 0.44, 0.52, 1.38, 0.44, -0.85, MAT.redCrate, { floorTag: 1 });
+
+  // --- 1F EXTERIOR PROPS (Pipes, Gas Canisters, Bamboo Pole, Potted Plant) ---
+  // Twin LPG gas cylinders by the left wall
+  addBox(FloorGroup_1, 0.32, 0.68, 0.32, -2.18, 0.54, -0.45, MAT.pipeMetal, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.32, 0.68, 0.32, -2.18, 0.54,  0.02, MAT.pipeMetal, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.14, 0.12, 0.14, -2.18, 0.92, -0.45, MAT.copperPipe, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.14, 0.12, 0.14, -2.18, 0.92,  0.02, MAT.copperPipe, { floorTag: 1 });
+
+  // Exterior vertical water pipe running up front-left corner
+  addBox(FloorGroup_1, 0.10, 2.35, 0.10, -2.06, 1.35, 1.52, MAT.pipeMetal, {
+    floorTag: 1,
+    cutawayFloor: 1,
+    cutScaleY: 0.28
+  });
+
+  // Red plastic delivery crate & potted plant outside front door
+  addBox(FloorGroup_1, 0.44, 0.36, 0.44, -0.95, 0.18, 1.96, MAT.redCrate, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.30, 0.28, 0.30,  0.88, 0.14, 1.98, MAT.terracotta, { floorTag: 1 });
+  addBox(FloorGroup_1, 0.38, 0.36, 0.38,  0.88, 0.42, 1.98, MAT.foliage, { floorTag: 1 });
+
+  // ----------------------------------------------------------------------------
+  // FLOOR 2 (`FloorGroup_2`): y = 2.4 to 4.6
+  // Overhanging illegal-extension style room!
+  // Cantilevered wider & deeper than 1F: X from -2.25 to +2.35 (width 4.6), Z from -1.9 to +1.95 (depth 3.85)
+  // ----------------------------------------------------------------------------
+  const FloorGroup_2 = new THREE.Group();
+  FloorGroup_2.name = 'FloorGroup_2';
+  shackRoot.add(FloorGroup_2);
+
+  // 2F Cantilevered Floor Deck (leaving stairwell opening on right-back around X:[0.95..1.75], Z:[-1.35..-0.15])
+  // Main left/center floor slab (X from -2.25 to +0.96, width 3.21)
+  addBox(FloorGroup_2, 3.21, 0.16, 3.85, -0.645, 2.48, 0.02, MAT.floor2F, { floorTag: 2 });
+  // Front-right floor slab in front of stairwell (X from +0.96 to +2.35, Z from -0.15 to +1.95)
+  addBox(FloorGroup_2, 1.39, 0.16, 2.10, 1.655, 2.48, 0.90, MAT.floor2F, { floorTag: 2 });
+  // Back-right narrow ledge behind stairwell (X from +0.96 to +2.35, Z from -1.90 to -1.35)
+  addBox(FloorGroup_2, 1.39, 0.16, 0.55, 1.655, 2.48, -1.625, MAT.floor2F, { floorTag: 2 });
+  // Right outer rim strip alongside stairwell (X from +1.76 to +2.35)
+  addBox(FloorGroup_2, 0.59, 0.16, 1.20, 2.055, 2.48, -0.75, MAT.floor2F, { floorTag: 2 });
+
+  // Diagonal wooden/metal support struts under the 2F overhang
+  const strutPositions = [
+    [-2.05, 2.22, -1.2,  0, 0,  0.65],
+    [-2.05, 2.22,  1.2,  0, 0,  0.65],
+    [ 2.10, 2.22, -1.2,  0, 0, -0.65],
+    [ 2.10, 2.22,  1.2,  0, 0, -0.65],
+    [-1.20, 2.22,  1.78, -0.65, 0, 0],
+    [ 1.20, 2.22,  1.78, -0.65, 0, 0]
+  ];
+  strutPositions.forEach(([sx, sy, sz, rx, ry, rz]) => {
+    addBox(FloorGroup_2, 0.12, 0.58, 0.12, sx, sy, sz, MAT.woodBeam, {
+      rotX: rx, rotY: ry, rotZ: rz, floorTag: 2
+    });
+  });
+
+  // 2F Walls (y from 2.56 to 4.56, height = 2.0)
+  const wallH2 = 2.0;
+  const wallCenterY2 = 2.56 + wallH2 / 2; // 3.56
+
+  // 2F Back Wall (-Z = -1.84)
+  addBox(FloorGroup_2, 4.56, wallH2, 0.14, 0.05, wallCenterY2, -1.84, MAT.woodWall, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.38
+  });
+
+  // 2F Left Wall (-X = -2.18) — corrugated green/teal tin illegal extension wall!
+  addBox(FloorGroup_2, 0.14, wallH2, 3.82, -2.18, wallCenterY2, 0.02, MAT.tinWall, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.22
+  });
+
+  // 2F Right Wall (+X = +2.28)
+  addBox(FloorGroup_2, 0.14, wallH2, 3.82, 2.28, wallCenterY2, 0.02, MAT.woodWall, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.22
+  });
+
+  // 2F Front Wall (+Z = +1.88) — mixed wood planks and patched tin extension with wide lookout window
+  addBox(FloorGroup_2, 2.75, wallH2, 0.14, -0.85, wallCenterY2, 1.88, MAT.tinWall, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.20
+  });
+  addBox(FloorGroup_2, 1.85, wallH2, 0.14, 1.42, wallCenterY2, 1.88, MAT.woodWall, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.20
+  });
+
+  // 2F Glowing Windows (Front Left, Front Right, and Left Wall)
+  addBox(FloorGroup_2, 1.15, 0.72, 0.18, -0.85, 3.62, 1.90, MAT.windowGlass, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.02
+  });
+  addBox(FloorGroup_2, 0.76, 0.68, 0.18, 1.38, 3.62, 1.90, MAT.windowGlass, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.02
+  });
+  addBox(FloorGroup_2, 0.18, 0.68, 0.92, -2.20, 3.62, 0.15, MAT.windowGlass, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.02
+  });
+
+  // Exterior AC Unit Box mounted on 2F Left/Front overhang + drip pipe
+  addBox(FloorGroup_2, 0.48, 0.52, 0.72, -2.46, 3.15, 1.15, MAT.acUnit, { floorTag: 2 });
+  addBox(FloorGroup_2, 0.52, 0.08, 0.78, -2.46, 2.86, 1.15, MAT.rustMetal, { floorTag: 2 });
+
+  // Iconic Kowloon Vertical Neon / Warm Shop Sign mounted on Front-Right corner (+X = 2.48, +Z = 1.45)
+  // Support iron brackets
+  addBox(FloorGroup_2, 0.42, 0.08, 0.08, 2.46, 4.18, 1.45, MAT.darkMetal, { floorTag: 2 });
+  addBox(FloorGroup_2, 0.42, 0.08, 0.08, 2.46, 3.05, 1.45, MAT.darkMetal, { floorTag: 2 });
+  // Sign box
+  const neonSignMesh = addBox(FloorGroup_2, 0.16, 1.48, 0.68, 2.68, 3.62, 1.45, MAT.neonSign, { floorTag: 2 });
+
+  // Bamboo Laundry Pole sticking out from 2F Front Window with hanging clothes
+  addBox(FloorGroup_2, 1.75, 0.06, 0.06, -0.85, 4.12, 2.38, MAT.bamboo, { floorTag: 2 });
+  addBox(FloorGroup_2, 0.06, 0.06, 0.56, -1.45, 4.12, 2.14, MAT.bamboo, { floorTag: 2 });
+  addBox(FloorGroup_2, 0.06, 0.06, 0.56, -0.25, 4.12, 2.14, MAT.bamboo, { floorTag: 2 });
+
+  const laundryShirt1 = addBox(FloorGroup_2, 0.36, 0.46, 0.05, -1.10, 3.86, 2.38, MAT.laundryWhite, { floorTag: 2 });
+  const laundryShirt2 = addBox(FloorGroup_2, 0.32, 0.40, 0.05, -0.60, 3.89, 2.38, MAT.laundryYellow, { floorTag: 2 });
+
+  // --- 2F INTERIOR FURNITURE (Low Tea Table, Cushions, Bookshelf, Window Chair) ---
+  // Low tea table & floor cushions in center of 2F
+  addBox(FloorGroup_2, 1.10, 0.32, 0.78, -0.55, 2.74, -0.20, MAT.woodDark, { floorTag: 2 });
+  addBox(FloorGroup_2, 0.38, 0.08, 0.38, -0.55, 2.60,  0.45, MAT.redCrate, { floorTag: 2 });
+  addBox(FloorGroup_2, 0.38, 0.08, 0.38, -1.25, 2.60, -0.20, MAT.blueTarp, { floorTag: 2 });
+  // Teapot & cup on 2F table
+  addBox(FloorGroup_2, 0.18, 0.18, 0.18, -0.45, 2.98, -0.18, MAT.terracotta, { floorTag: 2 });
+  // Bookshelf / storage cabinet against 2F back wall
+  addBox(FloorGroup_2, 1.35, 1.25, 0.38, -0.85, 3.18, -1.52, MAT.woodBeam, {
+    floorTag: 2,
+    cutawayFloor: 2,
+    cutScaleY: 0.45
+  });
+  // Safety railing around 2F stairwell opening
+  addBox(FloorGroup_2, 0.08, 0.58, 1.22, 0.92, 2.84, -0.75, MAT.woodBeam, { floorTag: 2 });
+
+  // ----------------------------------------------------------------------------
+  // ROOF (`RoofGroup`): y = 4.56 to 6.3
+  // Pitched corrugated tin roof + water tank + TV antenna + chimney
+  // ----------------------------------------------------------------------------
+  const RoofGroup = new THREE.Group();
+  RoofGroup.name = 'RoofGroup';
+  shackRoot.add(RoofGroup);
+
+  // Roof ceiling base trim
+  addBox(RoofGroup, 4.86, 0.14, 4.10, 0.05, 4.62, 0.02, MAT.woodBeam, { floorTag: 2 });
+
+  // Pitched corrugated tin roof halves (sloping along Z)
+  addBox(RoofGroup, 5.10, 0.12, 2.45, 0.05, 5.08, -1.04, MAT.tinRoof, {
+    rotX: 0.34,
+    floorTag: 2
+  });
+  addBox(RoofGroup, 5.10, 0.12, 2.45, 0.05, 5.08,  1.08, MAT.tinRoof, {
+    rotX: -0.34,
+    floorTag: 2
+  });
+  // Ridge cap beam
+  addBox(RoofGroup, 5.16, 0.16, 0.28, 0.05, 5.46, 0.02, MAT.rustMetal, { floorTag: 2 });
+
+  // Blue tarpaulin patch weighted down with old tires/bricks on roof
+  addBox(RoofGroup, 1.65, 0.06, 1.35, -0.95, 5.16, 0.95, MAT.blueTarp, {
+    rotX: -0.34,
+    floorTag: 2
+  });
+
+  // Rooftop Metal Water Tank on stilted frame
+  addBox(RoofGroup, 0.95, 0.55, 0.95, 1.35, 5.25, -0.75, MAT.darkMetal, { floorTag: 2 });
+  addBox(RoofGroup, 0.88, 0.88, 0.88, 1.35, 5.92, -0.75, MAT.pipeMetal, { floorTag: 2 });
+
+  // Classic Kowloon Rooftop Fishbone TV Antenna Mast
+  addBox(RoofGroup, 0.06, 1.75, 0.06, -1.55, 6.05, -0.65, MAT.pipeMetal, { floorTag: 2 });
+  addBox(RoofGroup, 0.85, 0.04, 0.04, -1.55, 6.65, -0.65, MAT.pipeMetal, { floorTag: 2 });
+  addBox(RoofGroup, 0.62, 0.04, 0.04, -1.55, 6.38, -0.65, MAT.pipeMetal, { floorTag: 2 });
+  addBox(RoofGroup, 0.04, 0.04, 0.72, -1.55, 6.52, -0.65, MAT.pipeMetal, { floorTag: 2 });
+
+  // Exhaust chimney pipe rising from 1F stove through roof
+  addBox(RoofGroup, 0.22, 1.15, 0.22, -1.42, 5.65, -1.32, MAT.rustMetal, { floorTag: 2 });
+  addBox(RoofGroup, 0.34, 0.08, 0.34, -1.42, 6.26, -1.32, MAT.darkMetal, { floorTag: 2 });
+
+  // ============================================================================
+  // 7. AUTONOMOUS PIXEL RESIDENT (AGENT SIMULATION & WAYPOINT ROUTINE)
+  // ============================================================================
+  const residentGroup = new THREE.Group();
+  residentGroup.name = 'PixelResident';
+  scene.add(residentGroup);
+
+  const skinMat = makeCelMaterial({ color: 0xf1c29b });
+  const headMat = makeCelMaterial({ map: TEXTURES.residentHead });
+  const torsoMat = makeCelMaterial({ map: TEXTURES.residentTorso });
+  const pantsMat = makeCelMaterial({ color: 0x323b4d });
+  const shoeMat = makeCelMaterial({ color: 0x261d18 });
+
+  // Articulated limbs with top pivot groups
+  const torsoMesh = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.36, 0.20), torsoMat);
+  torsoMesh.position.set(0, 0.46, 0);
+  torsoMesh.castShadow = true;
+  residentGroup.add(torsoMesh);
+
+  const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.28, 0.28), headMat);
+  headMesh.position.set(0, 0.80, 0);
+  headMesh.castShadow = true;
+  residentGroup.add(headMesh);
+
+  function createLimb(w, h, d, x, y, z, mat, shoe = false) {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, y, z);
+    const geo = new THREE.BoxGeometry(w, h, d);
+    geo.translate(0, -h / 2, 0);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    pivot.add(mesh);
+    if (shoe) {
+      const shoeMesh = new THREE.Mesh(new THREE.BoxGeometry(w + 0.02, 0.08, d + 0.05), shoeMat);
+      shoeMesh.position.set(0, -h + 0.04, 0.02);
+      pivot.add(shoeMesh);
+    }
+    residentGroup.add(pivot);
+    return pivot;
+  }
+
+  const leftArm  = createLimb(0.11, 0.32, 0.11, -0.21, 0.62, 0, skinMat, false);
+  const rightArm = createLimb(0.11, 0.32, 0.11,  0.21, 0.62, 0, skinMat, false);
+  const leftLeg  = createLimb(0.12, 0.28, 0.12, -0.08, 0.28, 0, pantsMat, true);
+  const rightLeg = createLimb(0.12, 0.28, 0.12,  0.08, 0.28, 0, pantsMat, true);
+
+  // Tiny voxel sparks / steam particles above workbench when resident is working
+  const sparkGroup = new THREE.Group();
+  sparkGroup.position.set(-1.35, 1.15, -1.10);
+  scene.add(sparkGroup);
+  const sparks = [];
+  const sparkMat = new THREE.MeshBasicMaterial({ color: 0xffcf56 });
+  for (let i = 0; i < 6; i++) {
+    const sp = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.07), sparkMat);
+    sp.visible = false;
+    sparkGroup.add(sp);
+    sparks.push({ mesh: sp, phase: i * 0.17 });
+  }
+
+  // Resident Waypoint & State Machine Definition
+  // The 4 core routines requested in spec:
+  // 1. WANDER_OUTSIDE
+  // 2. ENTER_SHACK
+  // 3. WORK_1F
+  // 4. CLIMB_STAIRS (climbs stairs to 2nd floor, looks out window, then returns down)
+  const AGENT_STATES = [
+    {
+      code: 'WANDER_OUTSIDE',
+      icon: '☀',
+      bubble: 'STROLL',
+      desc: 'Walking around the dithered island courtyard',
+      waypoints: [
+        { pos: new THREE.Vector3(0.0, 0.0, 2.7), pause: 0.4 },
+        { pos: new THREE.Vector3(-2.6, 0.0, 3.2), pause: 1.0, lookYaw: -0.6 },
+        { pos: new THREE.Vector3(-3.4, 0.0, 0.4), pause: 0.8, lookYaw: 1.4 },
+        { pos: new THREE.Vector3(-2.2, 0.0, 3.6), pause: 0.5 },
+        { pos: new THREE.Vector3(2.5, 0.0, 3.4), pause: 1.1, lookYaw: -2.2 },
+        { pos: new THREE.Vector3(0.0, 0.0, 2.5), pause: 0.4 }
+      ]
+    },
+    {
+      code: 'ENTER_SHACK',
+      icon: '⌂',
+      bubble: 'ENTER 1F',
+      desc: 'Entering 1st floor doorway into shack',
+      waypoints: [
+        { pos: new THREE.Vector3(0.0, 0.12, 1.95), pause: 0.2 },
+        { pos: new THREE.Vector3(0.0, 0.24, 1.15), pause: 0.25 },
+        { pos: new THREE.Vector3(-0.35, 0.24, -0.35), pause: 0.2 },
+        { pos: new THREE.Vector3(-0.92, 0.24, -0.52), pause: 0.2, lookYaw: Math.PI }
+      ]
+    },
+    {
+      code: 'WORK_1F',
+      icon: '⚒',
+      bubble: 'WORK 1F',
+      desc: 'Tinkering & cooking at 1F workbench stove',
+      waypoints: [
+        { pos: new THREE.Vector3(-0.92, 0.24, -0.58), pause: 5.2, lookYaw: Math.PI, isWorking: true }
+      ]
+    },
+    {
+      code: 'CLIMB_STAIRS',
+      icon: '▲',
+      bubble: '2F LOFT',
+      desc: 'Climbing stairs to 2F loft & resting by window',
+      waypoints: [
+        // Walk from workbench to bottom of stairs
+        { pos: new THREE.Vector3(0.25, 0.24, 0.85), pause: 0.15 },
+        { pos: new THREE.Vector3(1.36, 0.36, 0.90), pause: 0.15, lookYaw: Math.PI },
+        // Climb up the stairs to 2F
+        { pos: new THREE.Vector3(1.36, 1.35, 0.00), pause: 0.0, lookYaw: Math.PI },
+        { pos: new THREE.Vector3(1.36, 2.56, -1.05), pause: 0.2, lookYaw: -Math.PI * 0.5 },
+        // Walk to 2F front window & tea table
+        { pos: new THREE.Vector3(0.20, 2.56, -1.05), pause: 0.15 },
+        { pos: new THREE.Vector3(-0.85, 2.56, 1.22), pause: 3.8, lookYaw: 0.0, isResting2F: true },
+        // Return down stairs to exit
+        { pos: new THREE.Vector3(0.20, 2.56, -1.05), pause: 0.1 },
+        { pos: new THREE.Vector3(1.36, 2.56, -1.05), pause: 0.15, lookYaw: 0.0 },
+        { pos: new THREE.Vector3(1.36, 0.36, 0.90), pause: 0.15, lookYaw: 0.0 },
+        { pos: new THREE.Vector3(0.0, 0.24, 1.20), pause: 0.15, lookYaw: 0.0 },
+        { pos: new THREE.Vector3(0.0, 0.0, 2.50), pause: 0.2, lookYaw: 0.0 }
+      ]
+    }
+  ];
+
+  const agent = {
+    stateIndex: 0,
+    waypointIndex: 0,
+    pos: new THREE.Vector3(0.0, 0.0, 2.7),
+    yaw: 0,
+    pauseTimer: 0,
+    walkSpeed: 1.65,
+    animTime: 0,
+    stateElapsed: 0
+  };
+  residentGroup.position.copy(agent.pos);
+
+  // ============================================================================
+  // 8. UI OVERLAY & INTERACTIVE FLOOR SLICE CONTROLS
+  // ============================================================================
+  const domStateCode = document.getElementById('state-code');
+  const domStateDesc = document.getElementById('state-desc');
+  const domStateProgress = document.getElementById('state-progress');
+  const domSliceReadout = document.getElementById('slice-readout');
+  const domHoverStatus = document.getElementById('hover-status');
+  const domBubble = document.getElementById('resident-bubble');
+  const domBubbleIcon = document.getElementById('bubble-icon');
+  const domBubbleText = document.getElementById('bubble-text');
+  const domFloorTooltip = document.getElementById('floor-tooltip');
+
+  function setSliceMode(mode) {
+    CONFIG.sliceMode = String(mode);
+
+    // Update UI buttons
+    document.querySelectorAll('[data-slice]').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-slice') === CONFIG.sliceMode);
+    });
+
+    if (CONFIG.sliceMode === '1') {
+      // 1F Cutaway: Hide 2F & Roof completely (`visible = false`), zoom into 1F interior
+      FloorGroup_1.visible = true;
+      FloorGroup_2.visible = false;
+      RoofGroup.visible = false;
+      camState.desiredTarget.set(0.0, 1.05, 0.0);
+      camState.targetZoom = Math.max(camState.targetZoom, 1.68);
+      domSliceReadout.textContent = 'SLICE: 1F INTERIOR';
+    } else if (CONFIG.sliceMode === '2') {
+      // 2F Cutaway: Show 1F solid, show 2F with cutaway walls, hide Roof (`visible = false`)
+      FloorGroup_1.visible = true;
+      FloorGroup_2.visible = true;
+      RoofGroup.visible = false;
+      camState.desiredTarget.set(0.0, 3.15, 0.0);
+      camState.targetZoom = Math.max(camState.targetZoom, 1.62);
+      domSliceReadout.textContent = 'SLICE: 2F LOFT';
+    } else {
+      // Restore full exterior diorama
+      FloorGroup_1.visible = true;
+      FloorGroup_2.visible = true;
+      RoofGroup.visible = true;
+      camState.desiredTarget.set(0.0, 1.85, 0.0);
+      camState.targetZoom = 1.22;
+      domSliceReadout.textContent = 'VIEW: ALL FLOORS';
+    }
+  }
+
+  function setPixelScale(scale) {
+    CONFIG.pixelScale = Number(scale);
+    document.querySelectorAll('[data-pixel]').forEach((btn) => {
+      btn.classList.toggle('active', Number(btn.getAttribute('data-pixel')) === CONFIG.pixelScale);
+    });
+    initRenderTargets();
+  }
+
+  function setTheme(theme) {
+    CONFIG.theme = theme;
+    const isNight = theme === 'night';
+    document.body.classList.toggle('night-mode', isNight);
+    document.querySelectorAll('[data-theme]').forEach((btn) => {
+      btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
+    });
+
+    scene.background.copy(isNight ? CONFIG.nightBg : CONFIG.dayBg);
+    postQuadMaterial.uniforms.uNightMode.value = isNight ? 1.0 : 0.0;
+
+    // Adjust scene lighting and window/neon glow for Night Neon vs Day Paper
+    if (isNight) {
+      ambientLight.color.setHex(0x3a4c6e);
+      ambientLight.intensity = 0.46;
+      dirLight.color.setHex(0x6b88b8);
+      dirLight.intensity = 0.42;
+      stoveLight1F.intensity = 1.45;
+      lanternLight2F.intensity = 1.35;
+      neonGlowLight.intensity = 1.65;
+      MAT.windowGlass.emissiveIntensity = 0.95;
+      MAT.neonSign.emissiveIntensity = 1.0;
+    } else {
+      ambientLight.color.setHex(0xfff4e0);
+      ambientLight.intensity = 0.72;
+      dirLight.color.setHex(0xfff2d6);
+      dirLight.intensity = 0.92;
+      stoveLight1F.intensity = 0.80;
+      lanternLight2F.intensity = 0.55;
+      neonGlowLight.intensity = 0.0;
+      MAT.windowGlass.emissiveIntensity = 0.15;
+      MAT.neonSign.emissiveIntensity = 0.35;
+    }
+  }
+
+  function setSimSpeed(speed) {
+    CONFIG.simSpeed = Number(speed);
+    document.querySelectorAll('[data-speed]').forEach((btn) => {
+      btn.classList.toggle('active', Number(btn.getAttribute('data-speed')) === CONFIG.simSpeed);
+    });
+  }
+
+  // Bind HUD Buttons
+  document.querySelectorAll('[data-slice]').forEach((btn) => {
+    btn.addEventListener('click', () => setSliceMode(btn.getAttribute('data-slice')));
+  });
+  document.querySelectorAll('[data-pixel]').forEach((btn) => {
+    btn.addEventListener('click', () => setPixelScale(btn.getAttribute('data-pixel')));
+  });
+  document.querySelectorAll('[data-theme]').forEach((btn) => {
+    btn.addEventListener('click', () => setTheme(btn.getAttribute('data-theme')));
+  });
+  document.querySelectorAll('[data-speed]').forEach((btn) => {
+    btn.addEventListener('click', () => setSimSpeed(btn.getAttribute('data-speed')));
+  });
+
+  // ============================================================================
+  // 9. RAYCASTING (HOVER & CLICK FLOOR SELECTION) + ORBIT/ZOOM CAMERA INPUT
+  // ============================================================================
+  const raycaster = new THREE.Raycaster();
+  const pointerNDC = new THREE.Vector2();
+  let hoveredFloorTag = null;
+
+  function updatePointerNDC(clientX, clientY) {
+    pointerNDC.x = (clientX / window.innerWidth) * 2 - 1;
+    pointerNDC.y = -(clientY / window.innerHeight) * 2 + 1;
+  }
+
+  function getHoveredFloor(clientX, clientY) {
+    updatePointerNDC(clientX, clientY);
+    raycaster.setFromCamera(pointerNDC, camera);
+    const hits = raycaster.intersectObjects(pickableMeshes, false);
+    for (let i = 0; i < hits.length; i++) {
+      const obj = hits[i].object;
+      // Ignore hidden floor groups
+      if (obj.userData.floorTag === 2 && !FloorGroup_2.visible) continue;
+      if (obj.userData.floorTag) {
+        return obj.userData.floorTag;
+      }
+    }
+    return null;
+  }
+
+  container.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    camState.isDragging = true;
+    camState.dragMoved = false;
+    camState.dragStart.set(e.clientX, e.clientY);
+    camState.pointerDownPos.set(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (camState.isDragging) {
+      const dx = e.clientX - camState.dragStart.x;
+      const dy = e.clientY - camState.dragStart.y;
+      if (Math.hypot(e.clientX - camState.pointerDownPos.x, e.clientY - camState.pointerDownPos.y) > 5) {
+        camState.dragMoved = true;
+      }
+      camState.yaw -= dx * 0.0075;
+      camState.pitch = Math.max(0.22, Math.min(1.18, camState.pitch + dy * 0.0055));
+      camState.dragStart.set(e.clientX, e.clientY);
+      domFloorTooltip.style.opacity = '0';
+      return;
+    }
+
+    // Hover floor raycast
+    hoveredFloorTag = getHoveredFloor(e.clientX, e.clientY);
+    if (hoveredFloorTag) {
+      container.classList.add('hovering-floor');
+      domHoverStatus.textContent = `[HOVER: ${hoveredFloorTag}F]`;
+      domFloorTooltip.textContent = CONFIG.sliceMode === String(hoveredFloorTag)
+        ? `${hoveredFloorTag}F SLICED (CLICK GROUND TO RESET)`
+        : `CLICK TO SLICE ${hoveredFloorTag}F`;
+      domFloorTooltip.style.left = `${e.clientX}px`;
+      domFloorTooltip.style.top = `${e.clientY}px`;
+      domFloorTooltip.style.opacity = '1';
+    } else {
+      container.classList.remove('hovering-floor');
+      domHoverStatus.textContent = '';
+      domFloorTooltip.style.opacity = '0';
+    }
+  });
+
+  window.addEventListener('pointerup', (e) => {
+    if (!camState.isDragging) return;
+    camState.isDragging = false;
+
+    // If it was a clean click (not an orbit drag), check floor raycast!
+    if (!camState.dragMoved) {
+      const clickedFloor = getHoveredFloor(e.clientX, e.clientY);
+      if (clickedFloor === 1) {
+        setSliceMode('1');
+      } else if (clickedFloor === 2) {
+        setSliceMode('2');
+      } else {
+        // Clicking empty space / ground restores full exterior diorama view
+        if (CONFIG.sliceMode !== 'all') {
+          setSliceMode('all');
+        }
+      }
+    }
+  });
+
+  container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = e.deltaY > 0 ? 0.90 : 1.11;
+    camState.targetZoom = Math.max(0.68, Math.min(3.2, camState.targetZoom * zoomFactor));
+  }, { passive: false });
+
+  window.addEventListener('resize', () => {
+    const newAspect = window.innerWidth / window.innerHeight;
+    camera.left = -CONFIG.baseFrustum * newAspect;
+    camera.right = CONFIG.baseFrustum * newAspect;
+    camera.top = CONFIG.baseFrustum;
+    camera.bottom = -CONFIG.baseFrustum;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    initRenderTargets();
+  });
+
+  // ============================================================================
+  // 10. ANIMATION LOOP (AGENT ROUTINE, CUTAWAY WALL LERP, PIXEL-ART RENDER PASS)
+  // ============================================================================
+  const clock = new THREE.Clock();
+  const tempVec3 = new THREE.Vector3();
+
+  function updateAgentSimulation(dt) {
+    const currentState = AGENT_STATES[agent.stateIndex];
+    const currentWP = currentState.waypoints[agent.waypointIndex];
+    agent.stateElapsed += dt;
+
+    const toTarget = tempVec3.subVectors(currentWP.pos, agent.pos);
+    const dist = toTarget.length();
+
+    let isMoving = false;
+
+    if (dist > 0.04) {
+      isMoving = true;
+      const step = Math.min(dist, agent.walkSpeed * dt);
+      toTarget.normalize();
+      agent.pos.addScaledVector(toTarget, step);
+
+      // Smoothly turn towards movement direction on XZ
+      const desiredYaw = Math.atan2(toTarget.x, toTarget.z);
+      let diff = desiredYaw - agent.yaw;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      agent.yaw += diff * Math.min(1.0, dt * 12.0);
+    } else {
+      agent.pos.copy(currentWP.pos);
+      if (currentWP.lookYaw !== undefined) {
+        let diff = currentWP.lookYaw - agent.yaw;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        agent.yaw += diff * Math.min(1.0, dt * 10.0);
+      }
+
+      agent.pauseTimer += dt;
+      if (agent.pauseTimer >= (currentWP.pause || 0)) {
+        agent.pauseTimer = 0;
+        agent.waypointIndex++;
+        if (agent.waypointIndex >= currentState.waypoints.length) {
+          agent.waypointIndex = 0;
+          agent.stateIndex = (agent.stateIndex + 1) % AGENT_STATES.length;
+          agent.stateElapsed = 0;
+        }
+      }
+    }
+
+    // Apply quantized stop-motion feel to limb animation (12 fps pose quantization)
+    agent.animTime += dt;
+    const qTime = Math.floor(agent.animTime * 14) / 14;
+
+    residentGroup.position.copy(agent.pos);
+    residentGroup.rotation.y = agent.yaw;
+
+    if (isMoving) {
+      const swing = Math.sin(qTime * 11.0) * 0.68;
+      leftLeg.rotation.x = swing;
+      rightLeg.rotation.x = -swing;
+      leftArm.rotation.x = -swing * 0.85;
+      rightArm.rotation.x = swing * 0.85;
+      headMesh.position.y = 0.80 + Math.abs(Math.sin(qTime * 11.0)) * 0.03;
+    } else if (currentWP.isWorking) {
+      // Rapid arm bobbing at 1F workbench!
+      leftLeg.rotation.x = 0;
+      rightLeg.rotation.x = 0;
+      leftArm.rotation.x = -0.75 + Math.sin(qTime * 24.0) * 0.38;
+      rightArm.rotation.x = -0.75 - Math.sin(qTime * 24.0) * 0.38;
+      headMesh.position.y = 0.80 + Math.sin(qTime * 16.0) * 0.02;
+    } else if (currentWP.isResting2F) {
+      // Looking out the 2F window / sipping tea
+      leftLeg.rotation.x = 0;
+      rightLeg.rotation.x = 0;
+      leftArm.rotation.x = -0.35 + Math.sin(qTime * 3.0) * 0.08;
+      rightArm.rotation.x = 0.0;
+      headMesh.rotation.y = Math.sin(qTime * 1.8) * 0.25;
+    } else {
+      leftLeg.rotation.x = 0;
+      rightLeg.rotation.x = 0;
+      leftArm.rotation.x = Math.sin(qTime * 2.5) * 0.06;
+      rightArm.rotation.x = -Math.sin(qTime * 2.5) * 0.06;
+      headMesh.rotation.y = 0;
+    }
+
+    // Workbench sparks when working on 1F
+    const showSparks = Boolean(!isMoving && currentWP.isWorking);
+    sparks.forEach((sp, idx) => {
+      sp.mesh.visible = showSparks;
+      if (showSparks) {
+        const t = (agent.animTime * 2.2 + sp.phase) % 1.0;
+        sp.mesh.position.set(
+          Math.sin(idx * 2.1 + agent.animTime * 6) * 0.16,
+          t * 0.55,
+          Math.cos(idx * 1.7 + agent.animTime * 5) * 0.16
+        );
+        const s = 1.0 - t * 0.7;
+        sp.mesh.scale.set(s, s, s);
+      }
+    });
+
+    // Update HUD State Readout
+    const activeState = AGENT_STATES[agent.stateIndex];
+    domStateCode.textContent = activeState.code;
+    domStateDesc.textContent = activeState.desc;
+    domBubbleIcon.textContent = activeState.icon;
+    domBubbleText.textContent = activeState.bubble;
+
+    // Progress bar across current state's waypoints
+    const wpProgress = (agent.waypointIndex + Math.min(1, agent.pauseTimer / Math.max(0.2, currentWP.pause || 1))) / activeState.waypoints.length;
+    domStateProgress.style.width = `${Math.min(100, Math.round(wpProgress * 100))}%`;
+
+    // Project 3D position above resident's head to 2D screen coordinates for status bubble
+    tempVec3.copy(agent.pos);
+    tempVec3.y += 1.22;
+    tempVec3.project(camera);
+    const screenX = (tempVec3.x * 0.5 + 0.5) * window.innerWidth;
+    const screenY = (-tempVec3.y * 0.5 + 0.5) * window.innerHeight;
+    domBubble.style.left = `${Math.round(screenX)}px`;
+    domBubble.style.top = `${Math.round(screenY)}px`;
+  }
+
+  function updateCutawayWallsAndEnvironment(dt, elapsed) {
+    // Smoothly drop 1F front/side walls when Slice = '1'
+    const cut1F = CONFIG.sliceMode === '1';
+    cutawayWallMeshes1F.forEach((mesh) => {
+      const targetScaleY = cut1F ? mesh.userData.cutScaleY : mesh.userData.fullScaleY;
+      mesh.scale.y += (targetScaleY - mesh.scale.y) * Math.min(1.0, dt * 12.0);
+    });
+
+    // Smoothly drop 2F front/side walls when Slice = '2'
+    const cut2F = CONFIG.sliceMode === '2';
+    cutawayWallMeshes2F.forEach((mesh) => {
+      const targetScaleY = cut2F ? mesh.userData.cutScaleY : mesh.userData.fullScaleY;
+      mesh.scale.y += (targetScaleY - mesh.scale.y) * Math.min(1.0, dt * 12.0);
+    });
+
+    // Gentle wind sway on 2F hanging laundry shirts
+    laundryShirt1.rotation.x = Math.sin(elapsed * 2.1) * 0.12;
+    laundryShirt2.rotation.x = Math.sin(elapsed * 2.1 + 1.1) * 0.14;
+
+    // Subtle stove fire flicker
+    stoveLight1F.intensity = (CONFIG.theme === 'night' ? 1.35 : 0.75) + Math.sin(elapsed * 17.0) * 0.12;
+
+    // Subtle neon sign pulse in Night Mode
+    if (CONFIG.theme === 'night') {
+      neonGlowLight.intensity = 1.55 + Math.sin(elapsed * 8.0) * 0.15;
+    }
+  }
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const rawDt = Math.min(clock.getDelta(), 0.1);
+    const simDt = rawDt * CONFIG.simSpeed;
+    const elapsed = clock.getElapsedTime();
+
+    // 1. Update autonomous resident
+    updateAgentSimulation(simDt);
+
+    // 2. Update cutaway wall heights & ambient animations
+    updateCutawayWallsAndEnvironment(rawDt, elapsed);
+
+    // 3. Smoothly lerp camera target & zoom
+    camState.target.lerp(camState.desiredTarget, Math.min(1.0, rawDt * 9.0));
+    camState.zoom += (camState.targetZoom - camState.zoom) * Math.min(1.0, rawDt * 9.0);
+    updateCameraTransform();
+
+    // 4. Pass 1: Render low-res Color + Depth into `colorTarget`
+    renderer.setRenderTarget(colorTarget);
+    renderer.clear();
+    renderer.render(scene, camera);
+
+    // 5. Pass 2: Render low-res Normals into `normalTarget` for 1px normal/crease outlines on shack & resident
+    const prevBg = scene.background;
+    scene.background = null;
+    groundGroup.visible = false;
+    scene.overrideMaterial = normalOverrideMaterial;
+    renderer.setRenderTarget(normalTarget);
+    renderer.setClearColor(0x000000, 0.0);
+    renderer.clear();
+    renderer.render(scene, camera);
+    scene.overrideMaterial = null;
+    groundGroup.visible = true;
+    scene.background = prevBg;
+    renderer.setClearColor(prevBg, 1.0);
+
+    // 6. Pass 3: Composite low-res render target + 1px pixel-art outlines onto fullscreen quad
+    renderer.setRenderTarget(null);
+    renderer.render(postScene, postCamera);
+  }
+
+  // Expose state helper on window for quick inspection/debugging if needed
+  window.__KOWLOON_DIORAMA__ = {
+    CONFIG,
+    setSliceMode,
+    setPixelScale,
+    setTheme,
+    setSimSpeed,
+    FloorGroup_1,
+    FloorGroup_2,
+    RoofGroup,
+    agent
+  };
+
+  animate();
+})();
+</script>
+</body>
+</html>
