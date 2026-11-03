@@ -1,0 +1,30 @@
+[
+  {
+    "name": "01-day-full-building.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.0147,
+    "pctPixelsWithinThreshold": 99.95
+  },
+  {
+    "name": "02-day-1f-interior.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.1469,
+    "pctPixelsWithinThreshold": 99.64
+  },
+  {
+    "name": "03-day-2f-interior.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.5138,
+    "pctPixelsWithinThreshold": 98.81
+  },
+  {
+    "name": "04-night-full-building.png",
+    "width": 1280,
+    "height": 800,
+    "meanAbsDiffRgb": 0.9176,
+    "pctPixelsWithinThreshold": 96.15
+  }
+]

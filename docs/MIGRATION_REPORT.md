@@ -47,10 +47,12 @@
 
 ### Minimal Three.js Compatibility Adjustments (r128 → r171)
 
-Because the original prototype loaded Three.js `r128` from CDN and npm installs `three@0.171.0`, two minimal compatibility settings were documented and applied so the visual output matches `r128`:
+Because the original prototype loaded Three.js `r128` from CDN and npm installs `three@0.171.0`, four minimal compatibility adjustments were documented and applied so the visual output matches `r128`:
 
 1. **`THREE.ColorManagement.enabled = false`** (`src/core/config.ts`): Three.js r152+ enabled automatic sRGB-to-linear color management by default, which alters hex color literals and procedural canvas textures unless disabled. Setting `THREE.ColorManagement.enabled = false` preserves the exact `r128` color space pipeline.
-2. **PointLight `decay = 1`** (`src/rendering/lighting.ts`): Three.js r155+ changed the default `PointLight.decay` from `1` to `2`. Explicitly passing `decay = 1` to `stoveLight1F`, `lanternLight2F`, and `neonGlowLight` preserves the original warm interior and neon point-light falloff.
+2. **Legacy Non-Physical Light Scaling (`Math.PI` vs `BRDF_Lambert`)** (`src/core/config.ts` — `ensureLegacyR128LightingShaders()`): In Three.js `r128`, `renderer.physicallyCorrectLights` defaulted to `false`, causing `WebGLLights` to multiply all light intensities (`AmbientLight`, `DirectionalLight`, `PointLight`) by `scaleFactor = Math.PI` (`3.14159`), which canceled out the `RECIPROCAL_PI` (`1 / Math.PI`) division inside `BRDF_Lambert` in `MeshToonMaterial`. When Three.js r155–r165 removed legacy lighting, `BRDF_Lambert` still divided diffuse reflectance by `Math.PI` without the `Math.PI` light multiplier, making all `MeshToonMaterial` surfaces `3.14x` darker. Patching `ShaderChunk.lights_toon_pars_fragment` to multiply irradiance directly by `material.diffuseColor` restores exact `r128` cel-shaded brightness.
+3. **Legacy `PointLight` Range Attenuation Formula** (`src/core/config.ts` — `ensureLegacyR128LightingShaders()`): In Three.js `r128` (`PHYSICALLY_CORRECT_LIGHTS` undefined), `punctualLightIntensityToIrradianceFactor` computed distance attenuation as `pow(saturate(-lightDistance / cutoffDistance + 1.0), decayExponent)`. In Three.js `r171`, `getDistanceAttenuation` replaced this with physical inverse-power falloff `1.0 / max(pow(lightDistance, decayExponent), 0.01)` windowed by `cutoffDistance`. Restoring the `r128` normalized range attenuation formula in `ShaderChunk.lights_pars_begin` restores the exact warm stove and neon point-light gradients.
+4. **PointLight `decay = 1`** (`src/rendering/lighting.ts`): Three.js r155+ changed the default `PointLight.decay` from `1` to `2`. Explicitly passing `decay = 1` to `stoveLight1F`, `lanternLight2F`, and `neonGlowLight` preserves the original linear range falloff exponent.
 
 ---
 

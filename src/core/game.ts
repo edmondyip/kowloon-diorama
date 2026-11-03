@@ -21,6 +21,9 @@ export interface KowloonDebugHandle {
   FloorGroup_2: THREE.Group;
   RoofGroup: THREE.Group;
   agent: AgentSimState;
+  stepFrame?: (rawDt: number, elapsed: number) => void;
+  stop?: () => void;
+  start?: () => void;
 }
 
 declare global {
@@ -267,7 +270,10 @@ export function createKowloonGame(container: HTMLElement): KowloonGame {
     FloorGroup_1: shack.FloorGroup_1,
     FloorGroup_2: shack.FloorGroup_2,
     RoofGroup: shack.RoofGroup,
-    agent: resident.agent
+    agent: resident.agent,
+    stepFrame,
+    stop,
+    start
   };
 
   return {
